@@ -9,11 +9,11 @@ module zephyr (
 
   // internal state machine with additional states for LOAD
   reg [2:0] zstate;
-  localparam FETCH = 3'b000;
-  localparam DECODE = 3'b001;
-  localparam EXECUTE = 3'b010;
-  localparam MEM_READ = 3'b011;  // New state for memory read
-  localparam REG_WRITE = 3'b100;  // New state for register write
+  localparam logic [2:0] FETCH = 3'b000;
+  localparam logic [2:0] DECODE = 3'b001;
+  localparam logic [2:0] EXECUTE = 3'b010;
+  localparam logic [2:0] MEMREAD = 3'b011;  // New state for memory read
+  localparam logic [2:0] REGWRITE = 3'b100;  // New state for register write
 
   // Register
   reg [7:0] ZREG_IN;
@@ -94,17 +94,22 @@ module zephyr (
               PC <= PC + 1;
               zstate <= FETCH;
             end
+
+            default: begin
+              PC <= PC + 1;
+              zstate <= FETCH;
+            end
           endcase
         end
 
-        MEM_READ: begin
+        MEMREAD: begin
           // Data from RAM is now ready
           ZREG_IN <= RAM_DATA_OUT;  // Get data from RAM
           ZREG_OP <= 1'b1;  // Prepare for write
           zstate  <= REG_WRITE;  // Go to register write state
         end
 
-        REG_WRITE: begin
+        REGWRITE: begin
           // Register write is complete
           ZREG_OP <= 1'b0;  // Return to read mode
           PC      <= PC + 1;  // Increment PC

@@ -31,7 +31,7 @@ module zephyr_tb;
 
   // Test Procedure
   initial begin
-    $dumpfile("zephyr_tb.vcd");
+    $dumpfile("out/zephyr_tb.vcd");
     $dumpvars(0, zephyr_tb);
 
     // Initialize memory with test program
@@ -58,7 +58,7 @@ module zephyr_tb;
     reset = 0;
 
     // Monitor for 18 clock cycles (enough for 6 instructions)
-    repeat (10 * 5) begin
+    repeat (6 * 5) begin
       @(posedge clk);
       //#1;  // Small delay to let signals settle
       $display("%0t\t%s\t%h\t%h\t%h", $time, state_string, cpu.PC, cpu.IR, cpu.RAM_ADDR);

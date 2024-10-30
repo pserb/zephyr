@@ -5,7 +5,7 @@ module zregister_tb;
   reg [1:0] REG_SEL;
   wire [7:0] OUT;
 
-  register uut (
+  zregister uut (
       .IN(IN),
       .OPCODE(OPCODE),
       .REG_SEL(REG_SEL),

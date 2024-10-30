@@ -11,7 +11,7 @@ module zregister (
 );
 
   // registers 8 bits wide, an array of 4 of them
-  reg [7:0] registers[0:3];
+  reg [7:0] registers[4];
 
   // reading from the register file
   always @(*) begin
