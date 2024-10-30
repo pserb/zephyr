@@ -13,7 +13,8 @@ module zephyr (
   localparam logic [2:0] DECODE = 3'b001;
   localparam logic [2:0] EXECUTE = 3'b010;
   localparam logic [2:0] MEMREAD = 3'b011;  // New state for memory read
-  localparam logic [2:0] REGWRITE = 3'b100;  // New state for register write
+  localparam logic [2:0] MEMWRITE = 3'b100;  // New state for memory write
+  localparam logic [2:0] REGWRITE = 3'b101;  // New state for register write
 
   // Register
   reg [7:0] ZREG_IN;
@@ -31,11 +32,13 @@ module zephyr (
   // RAM
   reg [3:0] RAM_ADDR;
   reg RAM_OP;
+  reg [7:0] RAM_DATA_IN;
   wire [7:0] RAM_DATA_OUT;
 
   ram ram_inst (
       .ADDRESS (RAM_ADDR),
       .OPCODE  (RAM_OP),
+      .DATA_IN (RAM_DATA_IN),
       .DATA_OUT(RAM_DATA_OUT)
   );
 
@@ -52,6 +55,7 @@ module zephyr (
       ZREG_OP <= 1'b0;  // read
       ZREG_SEL <= 2'b0;
       ZREG_IN <= 8'b0;
+
       zstate <= FETCH;
     end else begin
       case (zstate)
@@ -80,13 +84,22 @@ module zephyr (
               RAM_ADDR <= IR[3:0];  // Get target address from instruction
               RAM_OP   <= 1'b0;  // Read operation
               ZREG_SEL <= IR[5:4];  // Select target register
-              zstate   <= MEM_READ;  // Go to memory read state
+              zstate   <= MEMREAD;  // Go to memory read state
             end
 
             2'b10: begin  // STR
               // Add store logic here
-              PC <= PC + 1;
-              zstate <= FETCH;
+              // bits 5:4 of IR are the register to store
+              // bits 3:0 of IR are the ram address to store to
+              // example: STR R0 14 == 10001110
+              // Store logic
+              // bits 5:4 of IR are the register to store
+              // bits 3:0 of IR are the RAM address to store to
+              RAM_ADDR <= IR[3:0];  // Set RAM address from instruction
+              RAM_OP <= 1'b1;  // Write operation
+              ZREG_SEL <= IR[5:4];  // Select source register
+              ZREG_OP <= 1'b0;  // Read from register
+              zstate <= MEMWRITE;  // Go to memory read state
             end
 
             2'b11: begin  // ALU
@@ -103,10 +116,18 @@ module zephyr (
         end
 
         MEMREAD: begin
-          // Data from RAM is now ready
           ZREG_IN <= RAM_DATA_OUT;  // Get data from RAM
           ZREG_OP <= 1'b1;  // Prepare for write
-          zstate  <= REG_WRITE;  // Go to register write state
+          zstate  <= REGWRITE;  // Go to register write state
+        end
+
+        MEMWRITE: begin
+          // Write data from register to RAM
+          RAM_DATA_IN <= ZREG_OUT;  // Set data from register
+          // ZREG_OP  <= 1'b0;  // Read from register
+          // ZREG_SEL <= IR[5:4];  // Select source register
+          PC          <= PC + 1;  // Increment PC
+          zstate      <= FETCH;  // Return to fetch state
         end
 
         REGWRITE: begin

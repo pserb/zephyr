@@ -11,7 +11,7 @@ module ram (
     output reg [7:0] DATA_OUT
 );
 
-  reg [7:0] registers[16];
+  reg [7:0] registers[15:0];
 
   always @(*) begin
     case (OPCODE)
