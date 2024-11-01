@@ -2,8 +2,6 @@ module alu_tb;
 
   // inputs
   reg  [1:0] OPCODE;
-  reg  [1:0] REG_A;
-  reg  [1:0] REG_B;
   reg  [7:0] DATA_A;
   reg  [7:0] DATA_B;
 
@@ -12,8 +10,6 @@ module alu_tb;
 
   alu uut (
       .OPCODE(OPCODE),
-      .REG_A(REG_A),
-      .REG_B(REG_B),
       .DATA_A(DATA_A),
       .DATA_B(DATA_B),
       .DATA_OUT(DATA_OUT)

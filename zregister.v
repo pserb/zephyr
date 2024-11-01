@@ -16,9 +16,9 @@ module zregister (
   // reading from the register file
   always @(*) begin
     case (OPCODE)
-      0:  // read
+      1'b0:  // read
       OUT = registers[REG_SEL];
-      1:  // write
+      1'b1:  // write
       registers[REG_SEL] = IN;
       default: OUT = 8'b0;
     endcase

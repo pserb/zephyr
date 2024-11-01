@@ -21,7 +21,7 @@ module zephyr_tb;
   end
 
   // Convert state to string for display
-  always @(*) begin
+  always @(cpu.zstate) begin
     case (cpu.zstate)
       2'b00:   state_string = "FETCH   ";
       2'b01:   state_string = "DECODE  ";
@@ -38,14 +38,31 @@ module zephyr_tb;
     $dumpfile("out/zephyr_tb.vcd");
     $dumpvars(0, zephyr_tb);
 
-    // cpu.ram_inst.registers[0] = 8'h00;  // NOP
-    cpu.ram_inst.registers[0]  = 8'b01001111;  // LOAD R0 15 (#FF)
-    cpu.ram_inst.registers[1]  = 8'b10001101;  // STR R0 13
-    cpu.ram_inst.registers[2]  = 8'b01011110;  // LOAD R1 14 (#FA)
-    cpu.ram_inst.registers[3]  = 8'b10011100;  // STR R1 12
+    cpu.ram_inst.registers[0] = 8'h4C;
+    cpu.ram_inst.registers[1] = 8'h5D;
+    cpu.ram_inst.registers[2] = 8'h6E;
+    cpu.ram_inst.registers[3] = 8'h7F;
+    cpu.ram_inst.registers[4] = 8'h8F;
+    cpu.ram_inst.registers[5] = 8'h9E;
+    cpu.ram_inst.registers[6] = 8'hAD;
+    cpu.ram_inst.registers[7] = 8'hBC;
+    cpu.ram_inst.registers[8] = 8'h00;
+    cpu.ram_inst.registers[9] = 8'h00;
+    cpu.ram_inst.registers[10] = 8'h00;
+    cpu.ram_inst.registers[11] = 8'h00;
+    cpu.ram_inst.registers[12] = 8'hFF;
+    cpu.ram_inst.registers[13] = 8'hFA;
+    cpu.ram_inst.registers[14] = 8'hDA;
+    cpu.ram_inst.registers[15] = 8'hD0;
 
-    cpu.ram_inst.registers[14] = 8'hFA;  // variable (NOP)
-    cpu.ram_inst.registers[15] = 8'hFF;  // variable (NOP)
+    // // cpu.ram_inst.registers[0] = 8'h00;  // NOP
+    // cpu.ram_inst.registers[0]  = 8'b01001111;  // LOAD R0 15 (#FF)
+    // cpu.ram_inst.registers[1]  = 8'b10001101;  // STR R0 13
+    // cpu.ram_inst.registers[2]  = 8'b01011110;  // LOAD R1 14 (#FA)
+    // cpu.ram_inst.registers[3]  = 8'b10011100;  // STR R1 12
+
+    // cpu.ram_inst.registers[14] = 8'hFA;  // variable (NOP)
+    // cpu.ram_inst.registers[15] = 8'hFF;  // variable (NOP)
 
     $display("\n---------------------------------------------------");
     $display("Starting Program Memory:");
@@ -62,8 +79,8 @@ module zephyr_tb;
     @(posedge clk);
     reset = 0;
 
-    // Monitor for 18 clock cycles (enough for 6 instructions)
-    repeat (4 * 5) begin
+    // monitor for X cycles (first number is X)
+    repeat (8 * 5) begin
       @(posedge clk);
 
       // Display cycle information

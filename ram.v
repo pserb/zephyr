@@ -15,9 +15,9 @@ module ram (
 
   always @(*) begin
     case (OPCODE)
-      0:  // read
+      1'b0:  // read
       DATA_OUT = registers[ADDRESS];
-      1:  // write
+      1'b1:  // write
       registers[ADDRESS] = DATA_IN;
       default: DATA_OUT = 8'b0;
     endcase

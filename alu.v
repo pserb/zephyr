@@ -14,8 +14,6 @@
 
 module alu (
     input [1:0] OPCODE,
-    input [1:0] REG_A,
-    input [1:0] REG_B,
     input [7:0] DATA_A,
     input [7:0] DATA_B,
     output reg [7:0] DATA_OUT

@@ -52,9 +52,11 @@ module zephyr (
       IR <= 8'b0;
       RAM_OP <= 1'b0;  // read
       RAM_ADDR <= 4'b0;
+      RAM_DATA_IN <= 8'b0;
       ZREG_OP <= 1'b0;  // read
       ZREG_SEL <= 2'b0;
       ZREG_IN <= 8'b0;
+      OP <= 2'b0;  // reset opcode
 
       zstate <= FETCH;
     end else begin
