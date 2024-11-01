@@ -1,0 +1,21 @@
+WIDTH=8;
+DEPTH=16;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+    0: 4C;
+    1: 5D;
+    2: 6E;
+    3: 7F;
+    4: 8F;
+    5: 9E;
+    6: AD;
+    7: BC;
+    [8..B]: 00;
+    C: FF;
+    D: FA;
+    E: DA;
+    F: D0;
+END;

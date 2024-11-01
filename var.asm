@@ -1,0 +1,9 @@
+.ORG 0
+	LOAD R0, [Y]
+	STR  R0, [13]
+	LOAD R1, [X]
+	STR  R1, [12]
+
+.ORG 14
+	DATA X, 0xDA
+	DATA Y, 0xD0
