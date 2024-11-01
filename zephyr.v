@@ -1,20 +1,23 @@
 module zephyr (
     input CLK,
     input RESET
-);
+  );
 
   reg [3:0] PC;  // program counter
   reg [7:0] IR;  // instruction register
   reg [1:0] OP;  // opcode
 
   // internal state machine with additional states for LOAD
-  reg [2:0] zstate;
-  localparam logic [2:0] FETCH = 3'b000;
-  localparam logic [2:0] DECODE = 3'b001;
-  localparam logic [2:0] EXECUTE = 3'b010;
-  localparam logic [2:0] MEMREAD = 3'b011;  // New state for memory read
-  localparam logic [2:0] MEMWRITE = 3'b100;  // New state for memory write
-  localparam logic [2:0] REGWRITE = 3'b101;  // New state for register write
+  reg [3:0] zstate;
+  localparam FETCH        = 4'b0000;
+  localparam DECODE       = 4'b0001;
+  localparam EXECUTE      = 4'b0010;
+  localparam FETCH_DATA_B = 4'b0011; // New state to fetch DATA_B
+  localparam ALU_EXECUTE  = 4'b0100; // New state to execute ALU operation
+  localparam ALU_WRITEBACK= 4'b0101; // New state to write back the result
+  localparam MEMREAD      = 4'b0110; // Updated state codes
+  localparam MEMWRITE     = 4'b0111;
+  localparam REGWRITE     = 4'b1000; // Adjusted for new state codes
 
   // Register
   reg [7:0] ZREG_IN;
@@ -23,10 +26,10 @@ module zephyr (
   wire [7:0] ZREG_OUT;
 
   zregister register_file (
-      .IN(ZREG_IN),
-      .OPCODE(ZREG_OP),
-      .REG_SEL(ZREG_SEL),
-      .OUT(ZREG_OUT)
+    .IN(ZREG_IN),
+    .OPCODE(ZREG_OP),
+    .REG_SEL(ZREG_SEL),
+    .OUT(ZREG_OUT)
   );
 
   // RAM
@@ -36,26 +39,44 @@ module zephyr (
   wire [7:0] RAM_DATA_OUT;
 
   ram ram_inst (
-      .ADDRESS (RAM_ADDR),
-      .OPCODE  (RAM_OP),
-      .DATA_IN (RAM_DATA_IN),
-      .DATA_OUT(RAM_DATA_OUT)
+    .ADDRESS (RAM_ADDR),
+    .OPCODE  (RAM_OP),
+    .DATA_IN (RAM_DATA_IN),
+    .DATA_OUT(RAM_DATA_OUT)
   );
 
   // ALU
-  //   alu alu_inst ();
+  reg [1:0] ALU_OPCODE;
+  reg [7:0] ALU_DATA_A;
+  reg [7:0] ALU_DATA_B;
+  wire [7:0] ALU_DATA_OUT;
+  alu alu_inst (
+    .OPCODE(ALU_OPCODE),
+    .DATA_A(ALU_DATA_A),
+    .DATA_B(ALU_DATA_B),
+    .DATA_OUT(ALU_DATA_OUT)
+  );
 
   // control logic (fetch, decode, execute)
   always @(posedge CLK or posedge RESET) begin
     if (RESET) begin
       PC <= 4'b0;
       IR <= 8'b0;
+      // Set up initial values for ram
       RAM_OP <= 1'b0;  // read
       RAM_ADDR <= 4'b0;
       RAM_DATA_IN <= 8'b0;
+
+      // Set up initial values for zregister
       ZREG_OP <= 1'b0;  // read
       ZREG_SEL <= 2'b0;
       ZREG_IN <= 8'b0;
+
+      // Set up initial values for ALU
+      ALU_OPCODE <= 2'b0;
+      ALU_DATA_A <= 8'b0;
+      ALU_DATA_B <= 8'b0;
+
       OP <= 2'b0;  // reset opcode
 
       zstate <= FETCH;
@@ -106,8 +127,13 @@ module zephyr (
 
             2'b11: begin  // ALU
               // Add ALU logic here
-              PC <= PC + 1;
-              zstate <= FETCH;
+              // bits 5:4 of IR are the alu operation to perform
+              ALU_OPCODE <= IR[5:4];  // Set ALU operation from instruction
+              // bits 3:2 of IR are the source register A
+              ZREG_SEL <= IR[3:2];  // Select source register A
+              ZREG_OP <= 1'b0;  // Read from register
+
+              zstate <= FETCH_DATA_B;  // Go to fetch data B state
             end
 
             default: begin
@@ -115,6 +141,29 @@ module zephyr (
               zstate <= FETCH;
             end
           endcase
+        end
+
+        FETCH_DATA_B: begin
+          ALU_DATA_A <= ZREG_OUT;  // Get data from register A
+
+          ZREG_SEL <= IR[1:0];  // Select source register B
+          ZREG_OP <= 1'b0;  // Read from register
+
+          zstate <= ALU_EXECUTE;  // Go to ALU execute state
+        end
+
+        ALU_EXECUTE: begin
+          ALU_DATA_B <= ZREG_OUT;  // Get data from register B
+
+          zstate <= ALU_WRITEBACK;  // Go to ALU writeback state
+        end
+
+        ALU_WRITEBACK: begin
+          ZREG_IN <= ALU_DATA_OUT;  // Set ALU result to register
+          ZREG_SEL <= IR[3:2];  // write to register A
+          ZREG_OP <= 1'b1;  // Prepare for write
+
+          zstate <= REGWRITE;  // Go to register write state
         end
 
         MEMREAD: begin

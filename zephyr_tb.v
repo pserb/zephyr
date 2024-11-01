@@ -5,13 +5,13 @@ module zephyr_tb;
   reg reset;
 
   // For state display
-  parameter integer NCharsInStateString = 8;
+  parameter integer NCharsInStateString = 12;
   reg [8*NCharsInStateString:1] state_string;
 
   // Instantiate the zephyr CPU
   zephyr cpu (
-      .CLK  (clk),
-      .RESET(reset)
+    .CLK  (clk),
+    .RESET(reset)
   );
 
   // Clock Generation
@@ -23,13 +23,16 @@ module zephyr_tb;
   // Convert state to string for display
   always @(cpu.zstate) begin
     case (cpu.zstate)
-      2'b00:   state_string = "FETCH   ";
-      2'b01:   state_string = "DECODE  ";
-      2'b10:   state_string = "EXECUTE ";
-      3'b011:  state_string = "MEMREAD ";
-      3'b100:  state_string = "MEMWRITE";
-      3'b101:  state_string = "REGWRITE";
-      default: state_string = "UNKNOWN ";
+      4'b0000: state_string = "FETCH       ";
+      4'b0001: state_string = "DECODE      ";
+      4'b0010: state_string = "EXECUTE     ";
+      4'b0011: state_string = "FETCH_DATA_B";
+      4'b0100: state_string = "ALU_EXECUTE ";
+      4'b0101: state_string = "ALU_WRITEBK ";
+      4'b0110: state_string = "MEMREAD     ";
+      4'b0111: state_string = "MEMWRITE    ";
+      4'b1000: state_string = "REGWRITE    ";
+      default: state_string = "UNKNOWN     ";
     endcase
   end
 
@@ -38,22 +41,22 @@ module zephyr_tb;
     $dumpfile("out/zephyr_tb.vcd");
     $dumpvars(0, zephyr_tb);
 
-    cpu.ram_inst.registers[0] = 8'h4C;
-    cpu.ram_inst.registers[1] = 8'h5D;
-    cpu.ram_inst.registers[2] = 8'h6E;
-    cpu.ram_inst.registers[3] = 8'h7F;
-    cpu.ram_inst.registers[4] = 8'h8F;
-    cpu.ram_inst.registers[5] = 8'h9E;
-    cpu.ram_inst.registers[6] = 8'hAD;
-    cpu.ram_inst.registers[7] = 8'hBC;
+    cpu.ram_inst.registers[0] = 8'h4E;
+    cpu.ram_inst.registers[1] = 8'h5F;
+    cpu.ram_inst.registers[2] = 8'hC1;
+    cpu.ram_inst.registers[3] = 8'h00;
+    cpu.ram_inst.registers[4] = 8'h00;
+    cpu.ram_inst.registers[5] = 8'h00;
+    cpu.ram_inst.registers[6] = 8'h00;
+    cpu.ram_inst.registers[7] = 8'h00;
     cpu.ram_inst.registers[8] = 8'h00;
     cpu.ram_inst.registers[9] = 8'h00;
     cpu.ram_inst.registers[10] = 8'h00;
     cpu.ram_inst.registers[11] = 8'h00;
-    cpu.ram_inst.registers[12] = 8'hFF;
-    cpu.ram_inst.registers[13] = 8'hFA;
-    cpu.ram_inst.registers[14] = 8'hDA;
-    cpu.ram_inst.registers[15] = 8'hD0;
+    cpu.ram_inst.registers[12] = 8'h00;
+    cpu.ram_inst.registers[13] = 8'h00;
+    cpu.ram_inst.registers[14] = 8'h02;
+    cpu.ram_inst.registers[15] = 8'h05;
 
     // // cpu.ram_inst.registers[0] = 8'h00;  // NOP
     // cpu.ram_inst.registers[0]  = 8'b01001111;  // LOAD R0 15 (#FF)
@@ -69,8 +72,8 @@ module zephyr_tb;
     for (integer i = 0; i < 16; i = i + 4) begin
       // Display RAM contents
       $display("RAM [%02d-%02d]: %h  %h  %h  %h", i, i + 3, cpu.ram_inst.registers[i],
-               cpu.ram_inst.registers[i+1], cpu.ram_inst.registers[i+2],
-               cpu.ram_inst.registers[i+3]);
+        cpu.ram_inst.registers[i+1], cpu.ram_inst.registers[i+2],
+        cpu.ram_inst.registers[i+3]);
     end
     $display("---------------------------------------------------");
 
@@ -85,25 +88,25 @@ module zephyr_tb;
 
       // Display cycle information
       $display("Cycle: %0t | State: %s | PC: %h | IR: %b | RAM_ADDR: %h", $time, state_string,
-               cpu.PC, cpu.IR, cpu.RAM_ADDR);
+        cpu.PC, cpu.IR, cpu.RAM_ADDR);
 
       // Display ZRegister contents
       $display("ZREG[00-03]: %h  %h  %h  %h", cpu.register_file.registers[0],
-               cpu.register_file.registers[1], cpu.register_file.registers[2],
-               cpu.register_file.registers[3]);
+        cpu.register_file.registers[1], cpu.register_file.registers[2],
+        cpu.register_file.registers[3]);
 
       // Display RAM contents in multiple columns
       // $display("RAM Contents:");
       for (integer i = 0; i < 16; i = i + 4) begin
         // Display RAM contents
         $display("RAM [%02d-%02d]: %h  %h  %h  %h", i, i + 3, cpu.ram_inst.registers[i],
-                 cpu.ram_inst.registers[i+1], cpu.ram_inst.registers[i+2],
-                 cpu.ram_inst.registers[i+3]);
+          cpu.ram_inst.registers[i+1], cpu.ram_inst.registers[i+2],
+          cpu.ram_inst.registers[i+3]);
 
         // Display Marker Line
         $display("             %s  %s  %s  %s", (i == cpu.PC) ? "^^" : "",
-                 (i + 1 == cpu.PC) ? "^^" : "", (i + 2 == cpu.PC) ? "^^" : "",
-                 (i + 3 == cpu.PC) ? "^^" : "");
+          (i + 1 == cpu.PC) ? "^^" : "", (i + 2 == cpu.PC) ? "^^" : "",
+          (i + 3 == cpu.PC) ? "^^" : "");
       end
 
       $display("---------------------------------------------------");

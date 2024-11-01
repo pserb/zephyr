@@ -1,0 +1,14 @@
+WIDTH=8;
+DEPTH=16;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+    0: 4E;
+    1: 5F;
+    2: C1;
+    [3..D]: 00;
+    E: 02;
+    F: 05;
+END;

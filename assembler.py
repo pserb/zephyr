@@ -4,10 +4,7 @@ import sys
 import re
 
 # Define opcode and register mappings
-OPCODES = {
-    "LOAD": "01",
-    "STR": "10",
-}
+OPCODES = {"LOAD": "01", "STR": "10", "ADD": "1100"}
 
 REGISTERS = {
     "R0": "00",
@@ -19,9 +16,12 @@ REGISTERS = {
 # Enhanced regular expressions for parsing
 ORG_REGEX = re.compile(r"^\.ORG\s+(\d+)$", re.IGNORECASE)
 DATA_REGEX = re.compile(r"^DATA\s+([A-Za-z]\w*),\s*0x([0-9A-Fa-f]{2})$", re.IGNORECASE)
-INSTR_REGEX = re.compile(
+# Regex for LOAD and STR instructions
+INSTR_LOAD_STR_REGEX = re.compile(
     r"^(LOAD|STR)\s+R(\d+),\s*\[([A-Za-z]\w*|\d+)\]$", re.IGNORECASE
 )
+# Regex for ADD instructions
+INSTR_ADD_REGEX = re.compile(r"^ADD\s+R(\d+),\s*R(\d+)$", re.IGNORECASE)
 
 
 class ZASMAssembler:
@@ -34,6 +34,7 @@ class ZASMAssembler:
         """First pass: collect variable definitions and their addresses"""
         for line_num, line in enumerate(lines, start=1):
             line = line.strip()
+            # print("line", line)
             if not line or line.startswith(";"):
                 continue
 
@@ -65,13 +66,20 @@ class ZASMAssembler:
                     )
                 continue
 
-            # Skip instruction processing in first pass
-            instr_match = INSTR_REGEX.match(line)
-            if instr_match:
+            # Handle LOAD and STR instructions
+            instr_load_str_match = INSTR_LOAD_STR_REGEX.match(line)
+            if instr_load_str_match:
                 self.current_address += 1
                 continue
 
-            if not any([org_match, data_match, instr_match]):
+            # Handle ADD instructions
+            instr_add_match = INSTR_ADD_REGEX.match(line)
+            # print("instr_add_match", instr_add_match)
+            if instr_add_match:
+                self.current_address += 1
+                continue
+
+            if not any([org_match, data_match, instr_load_str_match, instr_add_match]):
                 raise ValueError(f"Unrecognized line {line_num}: {line}")
 
     def second_pass(self, lines):
@@ -98,10 +106,10 @@ class ZASMAssembler:
                 self.current_address += 1
                 continue
 
-            # Handle instructions with variable references
-            instr_match = INSTR_REGEX.match(line)
-            if instr_match:
-                instr, reg_num, addr = instr_match.groups()
+            # Handle LOAD and STR instructions
+            instr_load_str_match = INSTR_LOAD_STR_REGEX.match(line)
+            if instr_load_str_match:
+                instr, reg_num, addr = instr_load_str_match.groups()
                 instr = instr.upper()
                 reg = f"R{reg_num}"
 
@@ -126,7 +134,7 @@ class ZASMAssembler:
                                 f"Undefined variable '{addr}' on line {line_num}"
                             )
                         mem_addr = self.variables[addr]
-                except ValueError as e:
+                except ValueError:
                     raise ValueError(
                         f"Invalid address or variable '{addr}' on line {line_num}"
                     )
@@ -138,6 +146,32 @@ class ZASMAssembler:
 
                 # Construct the 8-bit machine code
                 machine_code_bin = opcode + reg_code + f"{mem_addr:04b}"
+                machine_code_hex = f"{int(machine_code_bin, 2):02X}"
+                self.memory[self.current_address] = machine_code_hex
+                self.current_address += 1
+                continue
+
+            # Handle ADD instructions
+            instr_add_match = INSTR_ADD_REGEX.match(line)
+            if instr_add_match:
+                dest_reg_num, src_reg_num = instr_add_match.groups()
+                dest_reg = f"R{dest_reg_num}"
+                src_reg = f"R{src_reg_num}"
+
+                # Get opcode and register codes
+                opcode = OPCODES.get("ADD")
+                dest_reg_code = REGISTERS.get(dest_reg)
+                src_reg_code = REGISTERS.get(src_reg)
+
+                if not opcode:
+                    raise ValueError(f"Unknown instruction 'ADD' on line {line_num}")
+                if not dest_reg_code or not src_reg_code:
+                    raise ValueError(
+                        f"Unknown register in ADD instruction on line {line_num}"
+                    )
+
+                # Construct the 8-bit machine code: opcode (4 bits) + dest reg (2 bits) + src reg (2 bits)
+                machine_code_bin = opcode + dest_reg_code + src_reg_code
                 machine_code_hex = f"{int(machine_code_bin, 2):02X}"
                 self.memory[self.current_address] = machine_code_hex
                 self.current_address += 1
