@@ -5,3 +5,5 @@ zephyr
 
 .dvt/
 *.log
+
+.vscode/
