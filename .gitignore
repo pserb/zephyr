@@ -2,3 +2,6 @@ out/
 
 zephyr
 *.vcd
+
+.dvt/
+*.log
