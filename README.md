@@ -17,6 +17,9 @@ compile and run the testbench
 make
 ```
 
+Learn more about the architecture:
+https://www.pserb.me/projects/zephyr
+
 ### supported instructions
 - LOAD
 - STR
