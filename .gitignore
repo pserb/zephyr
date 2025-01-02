@@ -7,3 +7,5 @@ zephyr
 *.log
 
 .vscode/
+
+.DS_Store
